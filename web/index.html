@@ -1,0 +1,183 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title> Movie Finder | Summa</title>
+    <link rel="icon" type="image/svg+xml"
+        href="data:image/svg+xml,
+            <svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'>
+                <text y='.9em' font-size='90'>🎬</text>
+            </svg>">
+    <link rel="stylesheet" href="style.css">
+</head>
+<body>
+    <div class="container">
+        <header>
+            <div class="ascii-art">
+  ________  ____  ____  ___      ___  ___      ___       __      
+ /"       )("  _||_ " ||"  \    /"  ||"  \    /"  |     /""\     
+(:   \___/ |   (  ) : | \   \  //   | \   \  //   |    /    \    
+ \___  \   (:  |  | . ) /\\  \/.    | /\\  \/.    |   /' /\  \   
+  __/  \\   \\ \__/ // |: \.        ||: \.        |  //  __'  \  
+ /" \   :)  /\\ __ //\ |.  \    /:  ||.  \    /:  | /   /  \\  \ 
+(_______/  (__________)|___|\__/|___||___|\__/|___|(___/    \___)
+                                                                 
+            </div>
+            <h1>Movie Finder</h1>
+            <p class="subtitle">Search for movie details using the Summa backend</p>
+        </header>
+        
+        <div class="search-container">
+            <input type="text" id="movieInput" placeholder="Enter a movie title...">
+            <button id="searchBtn">Search</button>
+        </div>
+        
+        <div class="loader" id="loader">
+            <div class="spinner"></div>
+            <p>Searching for movie details...</p>
+        </div>
+        
+        <div class="error" id="error">
+             Movie not found or backend error. Please try another title.
+        </div>
+        
+        <div class="movie-result" id="movieResult">
+            <div class="movie-header">
+                <h2 class="movie-title" id="movieTitle">Movie Title</h2>
+                <span class="movie-year" id="movieYear">(Year)</span>
+            </div>
+            
+            <div class="movie-info">
+                <div class="detail-card">
+                    <h3 class="section-title">Plot Summary</h3>
+                    <p class="plot" id="moviePlot">Movie plot will appear here...</p>
+                </div>
+                
+                <div class="details-grid">
+                    <div class="detail-card">
+                        <h3 class="section-title">Cast</h3>
+                        <p class="cast" id="movieCast">Cast members will appear here...</p>
+                    </div>
+                    
+                    <div class="detail-card">
+                        <h3 class="section-title">Details</h3>
+                        <p><strong>Director:</strong> <span id="movieDirector">N/A</span></p>
+                        <p><strong>Genre:</strong> <span id="movieGenre">N/A</span></p>
+                        <p><strong>Runtime:</strong> <span id="movieRuntime">N/A</span></p>
+                        <p><strong>IMDb Rating:</strong> <span id="movieRating">N/A</span></p>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <footer>
+        <p>Powered by Summa Backend API | Movie Finder © 2025</p>
+    </footer>
+    
+    <script>
+        document.addEventListener('DOMContentLoaded', () => {
+            const searchBtn = document.getElementById('searchBtn');
+            const movieInput = document.getElementById('movieInput');
+            const movieResult = document.getElementById('movieResult');
+            const loader = document.getElementById('loader');
+            const error = document.getElementById('error');
+            const movieTitle = document.getElementById('movieTitle');
+            const movieYear = document.getElementById('movieYear');
+            const moviePlot = document.getElementById('moviePlot');
+            const movieCast = document.getElementById('movieCast');
+            const movieDirector = document.getElementById('movieDirector');
+            const movieGenre = document.getElementById('movieGenre');
+            const movieRuntime = document.getElementById('movieRuntime');
+            const movieRating = document.getElementById('movieRating');
+            
+            const BASE_URL = "https://summa-api.onrender.com/";
+            
+            // Focus on input field when page loads
+            movieInput.focus();
+            
+            // Handle search button click
+            searchBtn.addEventListener('click', searchMovie);
+            
+            // Handle Enter key in input field
+            movieInput.addEventListener('keypress', (e) => {
+                if (e.key === 'Enter') {
+                    searchMovie();
+                }
+            });
+            
+            function searchMovie() {
+                const title = movieInput.value.trim();
+                
+                if (!title) {
+                    showError("Please enter a movie title");
+                    return;
+                }
+                
+                // Show loader, hide results and error
+                loader.classList.add('active');
+                movieResult.classList.remove('active');
+                error.classList.remove('active');
+                
+                // Make API request
+                fetch(`${BASE_URL}/search?keyword=${encodeURIComponent(title)}`)
+                    .then(response => {
+                        if (!response.ok) {
+                            throw new Error('Backend response error');
+                        }
+                        return response.json();
+                    })
+                    .then(data => {
+                        // Hide loader
+                        loader.classList.remove('active');
+                        
+                        if (data.Response === "False") {
+                            showError(data.Error || "Movie not found");
+                            return;
+                        }
+                        
+                        // Display movie data
+                        displayMovie(data);
+                    })
+                    .catch(err => {
+                        console.error('Error:', err);
+                        loader.classList.remove('active');
+                        showError("Failed to connect to backend service");
+                    });
+            }
+            
+            function displayMovie(movie) {
+                movieTitle.textContent = movie.Title;
+                movieYear.textContent = `(${movie.Year})`;
+                moviePlot.textContent = movie.Plot;
+                movieCast.textContent = movie.Actors;
+                movieDirector.textContent = movie.Director;
+                movieGenre.textContent = movie.Genre;
+                movieRuntime.textContent = movie.Runtime;
+                movieRating.textContent = movie.imdbRating;
+                
+                // Show result and hide error
+                movieResult.classList.add('active');
+                error.classList.remove('active');
+            }
+            
+            function showError(message) {
+                error.textContent = `${message}`;
+                error.classList.add('active');
+                movieResult.classList.remove('active');
+                
+                // Clear input and focus
+                movieInput.value = '';
+                movieInput.focus();
+            }
+            
+            // Initial sample search for demonstration
+            setTimeout(() => {
+                movieInput.value = "The Matrix";
+                searchMovie();
+            }, 1000);
+        });
+    </script>
+</body>
+</html>
