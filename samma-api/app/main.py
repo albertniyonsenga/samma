@@ -4,6 +4,8 @@ import os
 from dotenv import load_dotenv
 from fastapi.responses import JSONResponse
 from fastapi import FastAPI, HTTPException
+from fastapi.middleware.cors import CORSMiddleware
+
 
 
 load_dotenv()
@@ -12,6 +14,16 @@ app = FastAPI(
     title="Summa API 🎬",
     description="Backend API for Summa CLI tool.",
     version="0.1.0"
+)
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=[
+        "http://127.0.0.1:5500",               # Local dev server
+        "https://albertniyonsenga.github.io/samma"   # GitHub Pages origin
+    ],
+    allow_credentials=True,
+    allow_methods=["*"],
+    allow_headers=["*"],
 )
 
 
