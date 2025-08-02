@@ -66,11 +66,12 @@ h1 {
     display: flex;
     gap: 1rem;
     margin-bottom: 2rem;
+    position: relative;
 }
 
 input {
     flex: 1;
-    padding: 1rem 1.5rem;
+    padding: 1rem 1.5rem 1rem 3rem;
     border: none;
     border-radius: 50px;
     background: rgba(255, 255, 255, 0.1);
@@ -79,6 +80,7 @@ input {
     outline: none;
     border: 2px solid transparent;
     transition: all 0.3s ease;
+    box-shadow: 0 4px 15px rgba(0, 0, 0, 0.2);
 }
 
 input:focus {
@@ -88,6 +90,16 @@ input:focus {
 
 input::placeholder {
     color: rgba(255, 255, 255, 0.5);
+}
+
+.search-icon {
+    position: absolute;
+    left: 1.5rem;
+    top: 50%;
+    transform: translateY(-50%);
+    font-size: 1.5rem;
+    color: rgba(255, 255, 255, 0.7);
+    z-index: 2;
 }
 
 button {
@@ -101,6 +113,9 @@ button {
     cursor: pointer;
     transition: all 0.3s ease;
     box-shadow: 0 4px 15px rgba(0, 201, 255, 0.3);
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
 }
 
 button:hover {
@@ -141,19 +156,19 @@ button:active {
     margin-bottom: 1.5rem;
     padding-bottom: 1.5rem;
     border-bottom: 1px solid rgba(108, 255, 160, 0.2);
+    display: flex;
+    align-items: center;
 }
 
 .movie-title {
     font-size: 2rem;
     font-weight: 700;
     margin-right: 1rem;
-    display: inline-block;
 }
 
 .movie-year {
     font-size: 1.5rem;
     color: #6cffa0;
-    display: inline-block;
 }
 
 .movie-info {
@@ -244,6 +259,70 @@ footer {
     font-size: 0.9rem;
 }
 
+.backend-status {
+    display: flex;
+    gap: 0.5rem;
+    justify-content: center;
+    margin-top: 0.5rem;
+    font-size: 0.8rem;
+}
+
+.status-dot {
+    width: 10px;
+    height: 10px;
+    border-radius: 50%;
+    background: #555;
+    display: inline-block;
+}
+
+.status-dot.active {
+    background: #6cffa0;
+    box-shadow: 0 0 8px rgba(108, 255, 160, 0.8);
+}
+
+.status-text {
+    color: rgba(255, 255, 255, 0.7);
+    margin-left: 0.5rem;
+}
+
+.recent-searches {
+    margin-top: 1.5rem;
+    padding: 1rem;
+    background: rgba(30, 40, 80, 0.2);
+    border-radius: 10px;
+    display: none;
+}
+
+.recent-searches.active {
+    display: block;
+}
+
+.recent-title {
+    font-size: 1rem;
+    color: #4dccff;
+    margin-bottom: 0.5rem;
+}
+
+.recent-list {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.5rem;
+}
+
+.recent-item {
+    background: rgba(77, 204, 255, 0.1);
+    padding: 0.3rem 0.8rem;
+    border-radius: 20px;
+    font-size: 0.9rem;
+    cursor: pointer;
+    transition: all 0.2s ease;
+}
+
+.recent-item:hover {
+    background: rgba(77, 204, 255, 0.3);
+}
+
+/* Responsive design */
 @media (max-width: 768px) {
     .container {
         padding: 1.5rem;
@@ -263,5 +342,31 @@ footer {
 
     button {
         width: 100%;
+        justify-content: center;
     }
+    
+    .search-icon {
+        left: 1.2rem;
+    }
+    
+    .movie-header {
+        flex-direction: column;
+        align-items: flex-start;
+    }
+    
+    .movie-year {
+        margin-top: 0.5rem;
+        font-size: 1.2rem;
+    }
+}
+
+/* Animation for status dots */
+@keyframes pulse {
+    0% { transform: scale(1); }
+    50% { transform: scale(1.2); }
+    100% { transform: scale(1); }
+}
+
+.status-dot.active {
+    animation: pulse 1.5s infinite;
 }
