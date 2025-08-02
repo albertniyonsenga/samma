@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title> Movie Finder | Samma</title>
+    <title>Movie Finder | Samma</title>
     <link rel="icon" type="image/svg+xml"
         href="data:image/svg+xml,
             <svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'>
@@ -30,7 +30,15 @@
         
         <div class="search-container">
             <input type="text" id="movieInput" placeholder="Enter a movie title...">
-            <button id="searchBtn">Search</button>
+            <button onclick="fetchMovie()">
+                <span>Search</span>
+                <span>🎬</span>
+            </button>
+        </div>
+        
+        <div class="recent-searches" id="recentSearches">
+            <div class="recent-title">Recent Searches:</div>
+            <div class="recent-list" id="recentList"></div>
         </div>
         
         <div class="loader" id="loader">
@@ -39,12 +47,12 @@
         </div>
         
         <div class="error" id="error">
-             Movie not found or backend error. Please try another title.
+            Movie not found or backend error. Please try another title.
         </div>
         
         <div class="movie-result" id="movieResult">
             <div class="movie-header">
-                <h2 class="movie-title" id="movieTitle">Movie Title</h2>
+                <h2 class="movie-title" id="movieTitleDisplay">Movie Title</h2>
                 <span class="movie-year" id="movieYear">(Year)</span>
             </div>
             
@@ -70,6 +78,13 @@
                 </div>
             </div>
         </div>
+        
+        <div class="backend-status">
+            <div class="status-dot" id="backend1"></div>
+            <div class="status-dot" id="backend2"></div>
+            <div class="status-dot" id="backend3"></div>
+            <span class="status-text">Backend status</span>
+        </div>
     </div>
     
     <footer>
@@ -77,106 +92,162 @@
     </footer>
     
     <script>
-        document.addEventListener('DOMContentLoaded', () => {
-            const searchBtn = document.getElementById('searchBtn');
-            const movieInput = document.getElementById('movieInput');
-            const movieResult = document.getElementById('movieResult');
-            const loader = document.getElementById('loader');
-            const error = document.getElementById('error');
-            const movieTitle = document.getElementById('movieTitle');
-            const movieYear = document.getElementById('movieYear');
-            const moviePlot = document.getElementById('moviePlot');
-            const movieCast = document.getElementById('movieCast');
-            const movieDirector = document.getElementById('movieDirector');
-            const movieGenre = document.getElementById('movieGenre');
-            const movieRuntime = document.getElementById('movieRuntime');
-            const movieRating = document.getElementById('movieRating');
-            
-            const BASE_URL = "https://summa-api.onrender.com/";
-            
-            // Focus on input field when page loads
-            movieInput.focus();
-            
-            // Handle search button click
-            searchBtn.addEventListener('click', searchMovie);
-            
-            // Handle Enter key in input field
-            movieInput.addEventListener('keypress', (e) => {
-                if (e.key === 'Enter') {
-                    searchMovie();
+        // Backend URLs with failover support
+        const BACKENDS = [
+            "https://summa-api.onrender.com",
+            "https://summa-api-prod.onrender.com",
+            "https://summa-api-failover.onrender.com"
+        ];
+        let currentBackendIndex = 0;
+        let recentSearches = JSON.parse(localStorage.getItem('recentSearches')) || [];
+
+        // Initialize UI elements
+        const elements = {
+            loader: document.getElementById('loader'),
+            error: document.getElementById('error'),
+            movieResult: document.getElementById('movieResult'),
+            movieInput: document.getElementById('movieInput'),
+            recentSearches: document.getElementById('recentSearches'),
+            recentList: document.getElementById('recentList'),
+            statusDots: [
+                document.getElementById('backend1'),
+                document.getElementById('backend2'),
+                document.getElementById('backend3')
+            ]
+        };
+
+        // Display elements
+        const movieElements = {
+            title: document.getElementById('movieTitleDisplay'),
+            year: document.getElementById('movieYear'),
+            plot: document.getElementById('moviePlot'),
+            cast: document.getElementById('movieCast'),
+            director: document.getElementById('movieDirector'),
+            genre: document.getElementById('movieGenre'),
+            runtime: document.getElementById('movieRuntime'),
+            rating: document.getElementById('movieRating')
+        };
+
+        // Initialize recent searches
+        function initRecentSearches() {
+            if (recentSearches.length > 0) {
+                elements.recentSearches.classList.add('active');
+                elements.recentList.innerHTML = '';
+                recentSearches.slice(0, 5).forEach(title => {
+                    const item = document.createElement('div');
+                    item.className = 'recent-item';
+                    item.textContent = title;
+                    item.onclick = () => {
+                        elements.movieInput.value = title;
+                        fetchMovie();
+                    };
+                    elements.recentList.appendChild(item);
+                });
+            }
+        }
+
+        // Add to recent searches *_*
+        function addToRecentSearches(title) {
+            if (!recentSearches.includes(title)) {
+                recentSearches.unshift(title);
+                if (recentSearches.length > 5) {
+                    recentSearches.pop();
+                }
+                localStorage.setItem('recentSearches', JSON.stringify(recentSearches));
+                initRecentSearches();
+            }
+        }
+
+        // Update backend status indicators
+        function updateBackendStatus() {
+            elements.statusDots.forEach((dot, index) => {
+                if (index === currentBackendIndex) {
+                    dot.classList.add('active');
+                } else {
+                    dot.classList.remove('active');
                 }
             });
-            
-            function searchMovie() {
-                const title = movieInput.value.trim();
-                
-                if (!title) {
-                    showError("Please enter a movie title");
-                    return;
+        }
+
+        // Call backend with failover logic
+        // Simply like applying `Load balancers`
+        async function callBackend(path, retries = 3) {
+            for (let i = 0; i < retries; i++) {
+                try {
+                    const response = await fetch(`${BACKENDS[currentBackendIndex]}${path}`);
+                    if (!response.ok) throw new Error(`HTTP error! status: ${response.status}`);
+                    return await response.json();
+                } catch (error) {
+                    console.error(`Attempt ${i+1} failed for backend ${BACKENDS[currentBackendIndex]}:`, error);
+                    if (i === retries - 1 && currentBackendIndex < BACKENDS.length - 1) {
+                        currentBackendIndex++;
+                        updateBackendStatus();
+                        i = -1;  // Reset retry counter for new backend
+                    }
                 }
-                
-                // Show loader, hide results and error
-                loader.classList.add('active');
-                movieResult.classList.remove('active');
-                error.classList.remove('active');
-                
-                // Make API request
-                fetch(`${BASE_URL}/search?keyword=${encodeURIComponent(title)}`)
-                    .then(response => {
-                        if (!response.ok) {
-                            throw new Error('Backend response error');
-                        }
-                        return response.json();
-                    })
-                    .then(data => {
-                        // Hide loader
-                        loader.classList.remove('active');
-                        
-                        if (data.Response === "False") {
-                            showError(data.Error || "Movie not found");
-                            return;
-                        }
-                        
-                        // Display movie data
-                        displayMovie(data);
-                    })
-                    .catch(err => {
-                        console.error('Error:', err);
-                        loader.classList.remove('active');
-                        showError("Failed to connect to backend service");
-                    });
             }
+            throw new Error("All backends failed");
+        }
+
+        // Toggle element visibility
+        function toggleElement(element, show) {
+            element.classList.toggle('active', show);
+        }
+
+        // Main movie fetching function
+        async function fetchMovie() {
+            const title = elements.movieInput.value.trim();
             
-            function displayMovie(movie) {
-                movieTitle.textContent = movie.Title;
-                movieYear.textContent = `(${movie.Year})`;
-                moviePlot.textContent = movie.Plot;
-                movieCast.textContent = movie.Actors;
-                movieDirector.textContent = movie.Director;
-                movieGenre.textContent = movie.Genre;
-                movieRuntime.textContent = movie.Runtime;
-                movieRating.textContent = movie.imdbRating;
-                
-                // Show result and hide error
-                movieResult.classList.add('active');
-                error.classList.remove('active');
+            if (!title) {
+                toggleElement(elements.error, true);
+                elements.error.textContent = "Please enter a movie title";
+                return;
             }
+
+            // Show loader and hide other sections
+            toggleElement(elements.loader, true);
+            toggleElement(elements.error, false);
+            toggleElement(elements.movieResult, false);
             
-            function showError(message) {
-                error.textContent = `${message}`;
-                error.classList.add('active');
-                movieResult.classList.remove('active');
+            // Add to recent searches
+            addToRecentSearches(title);
+
+            try {
+                const data = await callBackend(`/search?keyword=${encodeURIComponent(title)}`);
                 
-                // Clear input and focus
-                movieInput.value = '';
-                movieInput.focus();
+                // Update movie details
+                movieElements.title.textContent = data.title || 'Unknown Title';
+                movieElements.year.textContent = `(${data.year || 'N/A'})`;
+                movieElements.plot.textContent = data.plot || 'No plot summary available.';
+                movieElements.cast.textContent = data.cast || 'Cast information not available.';
+                movieElements.director.textContent = data.director || 'N/A';
+                movieElements.genre.textContent = data.genre || 'N/A';
+                movieElements.runtime.textContent = data.runtime || 'N/A';
+                movieElements.rating.textContent = data.rating || data.imdb_rating || 'N/A';
+                
+                // Show results
+                toggleElement(elements.loader, false);
+                toggleElement(elements.movieResult, true);
+            } catch (error) {
+                toggleElement(elements.loader, false);
+                toggleElement(elements.error, true);
+                elements.error.textContent = "Movie not found or backend error. Please try another title.";
+                console.error("Movie fetch failed:", error);
             }
+        }
+
+        // Initialize on load
+        document.addEventListener('DOMContentLoaded', () => {
+            updateBackendStatus();
+            initRecentSearches();
             
-            // Initial sample search for demonstration
-            setTimeout(() => {
-                movieInput.value = "The Matrix";
-                searchMovie();
-            }, 1000);
+            // Add Enter key support
+            elements.movieInput.addEventListener('keypress', (e) => {
+                if (e.key === 'Enter') fetchMovie();
+            });
+            
+            // Add focus to input
+            elements.movieInput.focus();
         });
     </script>
 </body>
