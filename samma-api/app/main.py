@@ -15,16 +15,15 @@ app = FastAPI(
     description="Backend API for Summa CLI tool.",
     version="0.1.0"
 )
+
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=[
-        "http://127.0.0.1:5500",               # Local dev server
-        "https://albertniyonsenga.github.io/samma"   # GitHub Pages origin
-    ],
+    allow_origins=["*"], # Allow all origins
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
 )
+
 
 
 OMDB_API_KEY = os.getenv("OMDB_API_KEY")
