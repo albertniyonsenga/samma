@@ -1,6 +1,7 @@
 from pydantic import BaseModel
 import requests
-import os
+import httpx, os
+from typing import List
 from dotenv import load_dotenv
 from fastapi.responses import JSONResponse
 from fastapi import FastAPI, HTTPException
@@ -37,6 +38,50 @@ class MovieData(BaseModel):
     year: str
     cast: str
     plot: str
+
+
+class MovieResult(BaseModel):           # New model
+    Title: str
+    Released: str
+    Runtime: str
+    Genre: str
+    Actors: str
+    Plot: str
+    Poster: str
+    imdbRating: str
+
+@app.get("/api/search", response_model=List[MovieResult])   # NEW response_model
+async def search(q: str = Query(..., min_length=2)):
+    async with httpx.AsyncClient(timeout=5) as client:
+        r = await client.get(
+            "http://www.omdbapi.com/",
+            params={"apikey": OMDB_API_KEY, "s": q, "type": "movie"}
+        )
+        data = r.json()
+        if data.get("Response") == "False":
+            return []
+
+        imdb_ids = [item["imdbID"] for item in data["Search"]]
+
+        # fetch full details for each movie
+        movies = []
+        for iid in imdb_ids:
+            detail = await client.get(
+                "http://www.omdbapi.com/",
+                params={"apikey": OMDB_API_KEY, "i": iid, "plot": "short"}
+            )
+            d = detail.json()
+            movies.append(MovieResult(
+                Title=d["Title"],
+                Released=d.get("Released", ""),
+                Runtime=d.get("Runtime", ""),
+                Genre=d.get("Genre", ""),
+                Actors=d.get("Actors", ""),
+                Plot=d.get("Plot", ""),
+                Poster=d.get("Poster", ""),
+                imdbRating=d.get("imdbRating", "")
+            ))
+        return movies
 
 @app.get("/")
 async def root():
