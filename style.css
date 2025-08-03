@@ -140,6 +140,23 @@ button:active {
     display: block;
     animation: fadeIn 0.5s ease;
 }
+.movie-poster {
+    display: flex;
+    justify-content: center;
+    margin-bottom: 1em;
+}
+
+#moviePoster {
+    max-width: 200px;
+    width: 100%;
+    height: auto;
+    border-radius: 4px;
+    display: none;
+}
+    
+#moviePoster.active {
+    display: block;
+}
 
 @keyframes fadeIn {
     from {
