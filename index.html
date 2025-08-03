@@ -1,20 +1,19 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Movie Finder | Samma</title>
-    <link rel="icon" type="image/svg+xml"
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1.0" />
+  <title>Movie Finder | Samma</title>
+ <link rel="icon" type="image/svg+xml"
         href="data:image/svg+xml,
             <svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'>
                 <text y='.9em' font-size='90'>🎬</text>
             </svg>">
-    <link rel="stylesheet" href="style.css">
 </head>
 <body>
-    <div class="container">
-        <header>
-            <div class="ascii-art">
+  <div class="container">
+    <header>
+      <div class="ascii-art">
   ________     __       ___      ___  ___      ___       __      
  /"       )   /""\     |"  \    /"  ||"  \    /"  |     /""\     
 (:   \___/   /    \     \   \  //   | \   \  //   |    /    \    
@@ -22,233 +21,212 @@
   __/  \\  //  __'  \  |: \.        ||: \.        |  //  __'  \  
  /" \   :)/   /  \\  \ |.  \    /:  ||.  \    /:  | /   /  \\  \ 
 (_______/(___/    \___)|___|\__/|___||___|\__/|___|(___/    \___)
-                                                                 
-            </div>
-            <h1>Movie Finder</h1>
-            <p class="subtitle">Search for movie details using the Samma backend</p>
-        </header>
-        
-        <div class="search-container">
-            <input type="text" id="movieInput" placeholder="Enter a movie title...">
-            <button onclick="fetchMovie()">
-                <span>Search</span>
-                <span>🎬</span>
-            </button>
-        </div>
-        
-        <div class="recent-searches" id="recentSearches">
-            <div class="recent-title">Recent Searches:</div>
-            <div class="recent-list" id="recentList"></div>
-        </div>
-        
-        <div class="loader" id="loader">
-            <div class="spinner"></div>
-            <p>Searching for movie details...</p>
-        </div>
-        
-        <div class="error" id="error">
-            Movie not found or backend error. Please try another title.
-        </div>
-        
-        <div class="movie-result" id="movieResult">
-            <div class="movie-header">
-                <h2 class="movie-title" id="movieTitleDisplay">Movie Title</h2>
-                <span class="movie-year" id="movieYear">(Year)</span>
-            </div>
-            
-            <div class="movie-info">
-                <div class="detail-card">
-                    <h3 class="section-title">Plot Summary</h3>
-                    <p class="plot" id="moviePlot">Movie plot will appear here...</p>
-                </div>
-                
-                <div class="details-grid">
-                    <div class="detail-card">
-                        <h3 class="section-title">Cast</h3>
-                        <p class="cast" id="movieCast">Cast members will appear here...</p>
-                    </div>
-                    
-                    <div class="detail-card">
-                        <h3 class="section-title">Details</h3>
-                        <p><strong>Director:</strong> <span id="movieDirector">N/A</span></p>
-                        <p><strong>Genre:</strong> <span id="movieGenre">N/A</span></p>
-                        <p><strong>Runtime:</strong> <span id="movieRuntime">N/A</span></p>
-                        <p><strong>IMDb Rating:</strong> <span id="movieRating">N/A</span></p>
-                    </div>
-                </div>
-            </div>
-        </div>
-        
-        <div class="backend-status">
-            <div class="status-dot" id="backend1"></div>
-            <div class="status-dot" id="backend2"></div>
-            <div class="status-dot" id="backend3"></div>
-            <span class="status-text">Backend status</span>
-        </div>
+      </div>
+      <h1>Movie Finder</h1>
+      <p class="subtitle">Search for movie details using the Samma backend</p>
+    </header>
+
+    <div class="search-container">
+      <input type="text" id="movieInput" placeholder="Enter a movie title…" />
+      <button onclick="fetchMovie()"><span>Search</span> <span>🎬</span></button>
     </div>
-    
-    <footer>
-        <p>Powered by Samma Backend API | Movie Finder © 2025</p>
-    </footer>
-    
-    <script>
-        // Backend URLs with failover support
-        const BACKENDS = [
-            "https://samma-api.onrender.com",
-            "https://samma-api-prod.onrender.com",
-            "https://samma-api-failover.onrender.com"
-        ];
-        let currentBackendIndex = 0;
-        let recentSearches = JSON.parse(localStorage.getItem('recentSearches')) || [];
 
-        // Initialize UI elements
-        const elements = {
-            loader: document.getElementById('loader'),
-            error: document.getElementById('error'),
-            movieResult: document.getElementById('movieResult'),
-            movieInput: document.getElementById('movieInput'),
-            recentSearches: document.getElementById('recentSearches'),
-            recentList: document.getElementById('recentList'),
-            statusDots: [
-                document.getElementById('backend1'),
-                document.getElementById('backend2'),
-                document.getElementById('backend3')
-            ]
-        };
+    <div class="recent-searches" id="recentSearches">
+      <div class="recent-title">Recent Searches:</div>
+      <div class="recent-list" id="recentList"></div>
+    </div>
 
-        // Display elements
-        const movieElements = {
-            title: document.getElementById('movieTitleDisplay'),
-            year: document.getElementById('movieYear'),
-            plot: document.getElementById('moviePlot'),
-            cast: document.getElementById('movieCast'),
-            director: document.getElementById('movieDirector'),
-            genre: document.getElementById('movieGenre'),
-            runtime: document.getElementById('movieRuntime'),
-            rating: document.getElementById('movieRating')
-        };
+    <div class="loader" id="loader">
+      <div class="spinner"></div>
+      <p>Searching for movie details…</p>
+    </div>
 
-        // Initialize recent searches
-        function initRecentSearches() {
-            if (recentSearches.length > 0) {
-                elements.recentSearches.classList.add('active');
-                elements.recentList.innerHTML = '';
-                recentSearches.slice(0, 5).forEach(title => {
-                    const item = document.createElement('div');
-                    item.className = 'recent-item';
-                    item.textContent = title;
-                    item.onclick = () => {
-                        elements.movieInput.value = title;
-                        fetchMovie();
-                    };
-                    elements.recentList.appendChild(item);
-                });
-            }
-        }
+    <div class="error" id="error">Movie not found or backend error. Please try another title.</div>
 
-        // Add to recent searches *_*
-        function addToRecentSearches(title) {
-            if (!recentSearches.includes(title)) {
-                recentSearches.unshift(title);
-                if (recentSearches.length > 5) {
-                    recentSearches.pop();
-                }
-                localStorage.setItem('recentSearches', JSON.stringify(recentSearches));
-                initRecentSearches();
-            }
-        }
+    <div class="movie-result" id="movieResult">
+      <div class="movie-poster">
+        <img id="moviePoster" alt="Movie poster" />
+      </div>
+      <div class="movie-header">
+        <h2 class="movie-title" id="movieTitleDisplay">Movie Title</h2>
+        <span class="movie-year" id="movieYear">(Year)</span>
+      </div>
+      <div class="movie-info">
+        <div class="detail-card">
+          <h3 class="section-title">Plot Summary</h3>
+          <p class="plot" id="moviePlot">Movie plot will appear here…</p>
+        </div>
+        <div class="details-grid">
+          <div class="detail-card">
+            <h3 class="section-title">Cast</h3>
+            <p class="cast" id="movieCast">Cast members will appear here…</p>
+          </div>
+          <div class="detail-card">
+            <h3 class="section‑title">Details</h3>
+            <p><strong>Director:</strong> <span id="movieDirector">N/A</span></p>
+            <p><strong>Genre:</strong> <span id="movieGenre">N/A</span></p>
+            <p><strong>Runtime:</strong> <span id="movieRuntime">N/A</span></p>
+            <p><strong>IMDb Rating:</strong> <span id="movieRating">N/A</span></p>
+          </div>
+        </div>
+      </div>
+    </div>
 
-        // Update backend status indicators
-        function updateBackendStatus() {
-            elements.statusDots.forEach((dot, index) => {
-                if (index === currentBackendIndex) {
-                    dot.classList.add('active');
-                } else {
-                    dot.classList.remove('active');
-                }
-            });
-        }
+    <div class="backend-status">
+      <div class="status-dot" id="backend1"></div>
+      <div class="status-dot" id="backend2"></div>
+      <div class="status-dot" id="backend3"></div>
+      <span class="status-text">Backend status</span>
+    </div>
+  </div>
 
-        // Call backend with failover logic
-        // Simply like applying `Load balancers`
-        async function callBackend(path, retries = 3) {
-            for (let i = 0; i < retries; i++) {
-                try {
-                    const response = await fetch(`${BACKENDS[currentBackendIndex]}${path}`);
-                    if (!response.ok) throw new Error(`HTTP error! status: ${response.status}`);
-                    return await response.json();
-                } catch (error) {
-                    console.error(`Attempt ${i+1} failed for backend ${BACKENDS[currentBackendIndex]}:`, error);
-                    if (i === retries - 1 && currentBackendIndex < BACKENDS.length - 1) {
-                        currentBackendIndex++;
-                        updateBackendStatus();
-                        i = -1;  // Reset retry counter for new backend
-                    }
-                }
-            }
-            throw new Error("All backends failed");
-        }
+  <footer>
+    <p>Powered by Samma Backend API | Movie Finder © 2025</p>
+  </footer>
 
-        // Toggle element visibility
-        function toggleElement(element, show) {
-            element.classList.toggle('active', show);
-        }
+  <script>
+    // Failover logic intact
+    const BACKENDS = [
+      "https://samma-api.onrender.com",
+      "https://samma-api-prod.onrender.com",
+      "https://samma-api-failover.onrender.com"
+    ];
+    let currentBackendIndex = 0;
+    let recentSearches = JSON.parse(localStorage.getItem("recentSearches")) || [];
 
-        // Main movie fetching function
-        async function fetchMovie() {
-            const title = elements.movieInput.value.trim();
-            
-            if (!title) {
-                toggleElement(elements.error, true);
-                elements.error.textContent = "Please enter a movie title";
-                return;
-            }
+    const elements = {
+      loader: document.getElementById("loader"),
+      error: document.getElementById("error"),
+      movieResult: document.getElementById("movieResult"),
+      movieInput: document.getElementById("movieInput"),
+      recentSearches: document.getElementById("recentSearches"),
+      recentList: document.getElementById("recentList"),
+      statusDots: [
+        document.getElementById("backend1"),
+        document.getElementById("backend2"),
+        document.getElementById("backend3")
+      ]
+    };
 
-            // Show loader and hide other sections
-            toggleElement(elements.loader, true);
-            toggleElement(elements.error, false);
-            toggleElement(elements.movieResult, false);
-            
-            // Add to recent searches
-            addToRecentSearches(title);
+    const movieElements = {
+      title: document.getElementById("movieTitleDisplay"),
+      year: document.getElementById("movieYear"),
+      plot: document.getElementById("moviePlot"),
+      cast: document.getElementById("movieCast"),
+      director: document.getElementById("movieDirector"),
+      genre: document.getElementById("movieGenre"),
+      runtime: document.getElementById("movieRuntime"),
+      rating: document.getElementById("movieRating"),
+      poster: document.getElementById("moviePoster")
+    };
 
-            try {
-                const data = await callBackend(`/search?keyword=${encodeURIComponent(title)}`);
-                
-                // Update movie details
-                movieElements.title.textContent = data.title || 'Unknown Title';
-                movieElements.year.textContent = `(${data.year || 'N/A'})`;
-                movieElements.plot.textContent = data.plot || 'No plot summary available.';
-                movieElements.cast.textContent = data.cast || 'Cast information not available.';
-                movieElements.director.textContent = data.director || 'N/A';
-                movieElements.genre.textContent = data.genre || 'N/A';
-                movieElements.runtime.textContent = data.runtime || 'N/A';
-                movieElements.rating.textContent = data.rating || data.imdb_rating || 'N/A';
-                
-                // Show results
-                toggleElement(elements.loader, false);
-                toggleElement(elements.movieResult, true);
-            } catch (error) {
-                toggleElement(elements.loader, false);
-                toggleElement(elements.error, true);
-                elements.error.textContent = "Movie not found or backend error. Please try another title.";
-                console.error("Movie fetch failed:", error);
-            }
-        }
-
-        // Initialize on load
-        document.addEventListener('DOMContentLoaded', () => {
-            updateBackendStatus();
-            initRecentSearches();
-            
-            // Add Enter key support
-            elements.movieInput.addEventListener('keypress', (e) => {
-                if (e.key === 'Enter') fetchMovie();
-            });
-            
-            // Add focus to input
-            elements.movieInput.focus();
+    function initRecentSearches() {
+      if (recentSearches.length) {
+        elements.recentSearches.classList.add("active");
+        elements.recentList.innerHTML = "";
+        recentSearches.slice(0, 5).forEach(title => {
+          const item = document.createElement("div");
+          item.className = "recent-item";
+          item.textContent = title;
+          item.onclick = () => {
+            elements.movieInput.value = title;
+            fetchMovie();
+          };
+          elements.recentList.appendChild(item);
         });
-    </script>
+      }
+    }
+
+    function addToRecentSearches(title) {
+      if (!recentSearches.includes(title)) {
+        recentSearches.unshift(title);
+        if (recentSearches.length > 5) recentSearches.pop();
+        localStorage.setItem("recentSearches", JSON.stringify(recentSearches));
+        initRecentSearches();
+      }
+    }
+
+    function updateBackendStatus() {
+      elements.statusDots.forEach((dot, idx) => {
+        dot.classList.toggle("active", idx === currentBackendIndex);
+      });
+    }
+
+    async function callBackend(path, retries = 2) {
+      let lastError;
+      for (let attempt = 0; attempt < retries; attempt++) {
+        try {
+          const response = await fetch(BACKENDS[currentBackendIndex] + path);
+          if (!response.ok) throw new Error(`${response.status}: ${response.statusText}`);
+          return await response.json();
+        } catch (e) {
+          console.error(`Attempt ${attempt + 1} failed at ${BACKENDS[currentBackendIndex]}${path}`, e);
+          lastError = e;
+          if (attempt === retries - 1 && currentBackendIndex < BACKENDS.length - 1) {
+            currentBackendIndex++;
+            updateBackendStatus();
+            attempt = -1; // restart attempts with new backend
+          }
+        }
+      }
+      throw lastError;
+    }
+
+    function toggleElement(el, show) {
+      el.classList.toggle("active", show);
+    }
+
+    async function fetchMovie() {
+      const title = elements.movieInput.value.trim();
+      if (!title) {
+        elements.error.textContent = "Please enter a movie title";
+        toggleElement(elements.error, true);
+        return;
+      }
+      toggleElement(elements.error, false);
+      toggleElement(elements.movieResult, false);
+      toggleElement(elements.loader, true);
+      addToRecentSearches(title);
+
+      try {
+        const data = await callBackend(`/movie?title=${encodeURIComponent(title)}`);
+        // Poster logic (only if returned and not N/A)
+        if (data.Poster && data.Poster !== "N/A") {
+          movieElements.poster.src = data.Poster;
+          movieElements.poster.alt = `Poster of ${data.Title}`;
+          movieElements.poster.classList.add("active");
+        } else {
+          movieElements.poster.src = "";
+          movieElements.poster.alt = "No poster available";
+          movieElements.poster.classList.remove("active");
+        }
+        movieElements.title.textContent = data.Title || "Unknown Title";
+        movieElements.year.textContent = `(${data.Year || "N/A"})`;
+        movieElements.plot.textContent = data.Plot || "No plot summary available.";
+        movieElements.cast.textContent = data.Actors || "Cast information not available.";
+        movieElements.director.textContent = data.Director || "N/A";
+        movieElements.genre.textContent = data.Genre || "N/A";
+        movieElements.runtime.textContent = data.Runtime || "N/A";
+        movieElements.rating.textContent = data.imdbRating || "N/A";
+
+        toggleElement(elements.loader, false);
+        toggleElement(elements.movieResult, true);
+      } catch (e) {
+        console.error("Fetch failed:", e);
+        elements.error.textContent = "Movie not found or backend error. Please try another title.";
+        toggleElement(elements.loader, false);
+        toggleElement(elements.error, true);
+      }
+    }
+
+    document.addEventListener("DOMContentLoaded", () => {
+      updateBackendStatus();
+      initRecentSearches();
+      elements.movieInput.addEventListener("keydown", e => {
+        if (e.key === "Enter") fetchMovie();
+      });
+      elements.movieInput.focus();
+    });
+  </script>
 </body>
 </html>
