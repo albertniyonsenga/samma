@@ -16,6 +16,10 @@ See Movie Finder in action with a demonstration of the backend failover system:
 
 [![Watch the Demo](https://raw.githubusercontent.com/albertniyonsenga/samma/main/demo/flyer.png)](https://raw.githubusercontent.com/albertniyonsenga/samma/main/demo/demo.mp4)
 
+
+Uploading Untitled design.mp4…
+
+
 *Click image to watch demo video on Loom*
 
 <details>
