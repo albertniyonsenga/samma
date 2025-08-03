@@ -14,13 +14,7 @@ Samma: Movie Finder is a sophisticated web application that demonstrates the pra
 ### Demo Video
 See Movie Finder in action with a demonstration of the backend failover system:
 
-[![Watch the Demo](https://raw.githubusercontent.com/albertniyonsenga/samma/main/demo/flyer.png)](https://raw.githubusercontent.com/albertniyonsenga/samma/main/demo/demo.mp4)
-
-
-Uploading Untitled design.mp4…
-
-
-*Click image to watch demo video on Loom*
+https://github.com/user-attachments/assets/e748d59b-c9f1-4c76-8bf4-07f40318beeb
 
 <details>
 <summary>Implementation</summary>
@@ -132,14 +126,216 @@ This implementation demonstrates:
 ```bash
 # Clone repository
 git clone https://github.com/albertniyonsenga/samma.git
-
 cd samma
+```
+```
 # If you wanna hack into api
 cd samma-api
-
+```
+```
 # If you wanna hack into a website
 cd web
 ```
+<details> 
+<summary> API Setup & Usage </summary>
+    
+### 1. Prerequisites
+- **Python 3.10+**
+- **OMDb API Key** – obtain from [omdbapi.com](https://www.omdbapi.com).  
+  Your free tier allows up to ~1,000 daily requests, and the API returns fields like `Title`, `Year`, `Plot`, `Poster` (or `"N/A"`), `Actors`, `Genre`, `imdbRating`, etc., all compatible with your FastAPI `/movie?title=` endpoint :contentReference[oaicite:0]{index=0}.
+
+
+### 2. Clone & Environment Setup
+
+```bash
+git clone https://github.com/albertniyonsenga/samma.git
+cd samma-api
+````
+
+Create a `.env` (or export directly):
+
+```
+OMDB_API_KEY=your-omdb-api-key
+```
+
+Or for shell:
+
+```bash
+export OMDB_API_KEY=your-omdb-api-key
+```
+
+---
+
+### 3. Install & Run Locally
+
+```bash
+python3 -m venv venv
+source venv/bin/activate
+pip install fastapi uvicorn httpx
+uvicorn main:app --reload --host 0.0.0.0 --port 8000
+```
+
+Visit `http://localhost:8000/` — the API root will show a JSON like:
+
+```json
+{
+  "message": "🎬 Welcome to Movie Search API powered by Samma Backend",
+  "endpoints": {
+    "movie": "/movie?title=<TITLE>",
+    "search": "/search?query=<TERM>&page=<PAGE_NUMBER>"
+  },
+  "docs": "/docs"
+}
+```
+
+⚠️ Do **not** use `uvicorn app:app`; since your file is named `main.py`, the correct module path is `main:app`. Otherwise, you'll see:
+
+````
+ModuleNotFoundError: No module named 'app'
+``` :contentReference[oaicite:5]{index=5}
+````
+---
+
+### 4. CORS Middleware
+
+Your `main.py` includes:
+
+```python
+from fastapi.middleware.cors import CORSMiddleware
+
+app = FastAPI(...)
+app.add_middleware(
+  CORSMiddleware,
+  allow_origins=["*"],
+  allow_methods=["*"],
+  allow_headers=["*"],
+)
+````
+
+This setup permits requests from **any origin**—essential for separate frontend domains—and handles both simple GETs and preflight `OPTIONS`, automatically setting the needed CORS headers ([FastAPI][1]).
+
+---
+
+### 5. Running with Docker
+
+```bash
+docker build -t movie-api:latest .
+docker run --env OMDB_API_KEY=your_key_here -p 80:80 movie-api:latest
+```
+
+The FastAPI app will serve at `http://localhost:80/movie?title=Inception`.
+
+---
+
+### 6. Deploying to Render.com
+
+Ensure your `render.yaml` includes:
+
+```yaml
+services:
+  - type: web
+    name: movie-api
+    runtime: docker
+    dockerfilePath: ./Dockerfile
+    plan: free
+    envVars:
+      - key: OMDB_API_KEY
+        sync: false
+```
+
+Render will prompt you for `OMDB_API_KEY` securely. It will run `uvicorn main:app --host=0.0.0.0 --port 80` by default (as specified in the Dockerfile).
+
+---
+
+### 7. API Endpoints (Sample Requests)
+
+| Endpoint      | Description                     | Example URL                    |
+| ------------- | ------------------------------- | ------------------------------ |
+| `GET /`       | Welcome message & documentation | `https://your-api-domain.com/` |
+| `GET /movie`  | Fetch movie details by title    | `?title=Inception`             |
+| `GET /search` | Search movies with pagination   | `?q=Matrix&page=1`         |
+
+**Example using `curl`:**
+
+```bash
+curl "https://your-api-domain.com/movie?title=Inception"
+```
+
+**Note:** The response JSON is a direct pass-through of OMDb fields such as:
+`Title`, `Year`, `Plot`, `Actors`, `Director`, `Genre`, `Runtime`, `Poster`, `imdbRating`, etc.
+
+---
+
+### 8. Frontend Integration (JavaScript Example)
+
+```javascript
+fetch(`/movie?title=${encodeURIComponent(title)}`)
+  .then(res => {
+    if (!res.ok) throw new Error(res.status);
+    return res.json();
+  })
+  .then(data => {
+    console.log(data.Title, data.Plot, data.Poster, data.imdbRating);
+  })
+  .catch(err => console.error("Error:", err));
+```
+
+Your UI can map these fields to render title, year, plot, actors, poster, and IMDb rating.
+
+---
+
+### ✅ Quick Checklist
+
+* \[x] `.env` or environment variable setup
+* \[x] Run with `uvicorn main:app`, **not** `app:app`
+* \[x] CORS configured to allow all origins via FastAPI middleware
+* \[x] Dockerfile presents at `/movie?title=<TITLE>` endpoint
+* \[x] Included fast, reliable API response fields from OMDb
+* \[x] Ready for frontend consumption—poster renders, recent searches, and failover handled
+
+---
+
+### Troubleshooting Tips
+
+| Issue                                                  | Cause                                       | Resolution                                                                                                                              |
+| ------------------------------------------------------ | ------------------------------------------- | --------------------------------------------------------------------------------------------------------------------------------------- |
+| `ModuleNotFoundError: No module named 'app'`           | Uvicorn using `app:app`, file is `main.py`  | Update to `uvicorn main:app` ([Stack Overflow][2], [KodeKloud Notes][3], [Stat 545][4], [sentry.io][5])                                 |
+| `CORS policy: No 'Access-Control-Allow-Origin' header` | Browser blocked cross-domain request        | Verify CORS middleware with `allow_origins=["*"]`, and that `allow_methods`/`allow_headers` are set ([FastAPI][1], [Stack Overflow][6]) |
+| `"Poster": "N/A"` or image fails to load               | OMDb API returns no poster or blocked image | Ensure your frontend hides or replaces poster element gracefully, use `Poster !== "N/A"` condition                                      |
+
+---
+
+With this setup, you’re ready to **develop**, **test**, or **deploy** your backend—and integrate it seamlessly with your frontend. Enjoy building! 🎬
+
+```
+::contentReference[oaicite:29]{index=29}
+```
+
+[1]: https://fastapi.tiangolo.com/tutorial/cors/
+[2]: https://stackoverflow.com/questions/71311507/modulenotfounderror-no-module-named-app-fastapi-docker/71312543
+[3]: https://notes.kodekloud.com/docs/Python-API-Development-with-FastAPI/Deployment/What-Is-CORS 
+[4]: https://stat545.com/diy-web-data.html
+[5]: https://sentry.io/answers/fastapi-docker-no-module-named-app-error/
+[6]: https://stackoverflow.com/questions/65635346/how-can-i-enable-cors-in-fastapi
+
+</details>
+<details>
+    <summary> Front-end Setup and usage</summary>
+    
+This section guides you to **run the front-end UI** after switching to the `web` branch of your repository. This is the branch containing the static site files (`index.html`, `style.css`, etc.), and is *separate from your back-end repo or branch*.
+
+---
+
+### Switch to the `web` branch
+
+From your terminal inside the project folder:
+
+```bash
+git fetch origin
+git switch web
+```
+**Boom then you're ready to hack the front-end.**
+</details>
 
 ## License
 This project is licensed under the MIT License - see the [LICENSE](LICENSE) file for details.
