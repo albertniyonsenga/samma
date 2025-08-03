@@ -1,4 +1,5 @@
 from fastapi import FastAPI, HTTPException, Query
+from fastapi.middleware.cors import CORSMiddleware 
 from pydantic import BaseModel
 from dotenv import load_dotenv
 import httpx
@@ -10,6 +11,15 @@ load_dotenv()
 app = FastAPI(
     title="Movie Search API",
     description="Fetch movie details via OMDb API",
+) 
+
+
+app.add_middleware(         
+    CORSMiddleware,
+    allow_origins=["*"],
+    allow_credentials=True,
+    allow_methods=["*"],
+    allow_headers=["*"],
 )
 
 OMDB_BASE = "http://www.omdbapi.com/"
