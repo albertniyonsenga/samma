@@ -14,7 +14,7 @@ Samma: Movie Finder is a sophisticated web application that demonstrates the pra
 ### Demo Video
 See Movie Finder in action with a demonstration of the backend failover system:
 
-[![Movie Finder Demo](https://img.youtube.com/vi/ID/0.jpg)](https://www.youtube.com/watch?v=ID)
+[![Watch the Demo](https://raw.githubusercontent.com/albertniyonsenga/samma/main/demo/flyer.png)](https://raw.githubusercontent.com/albertniyonsenga/samma/main/demo/demo.mp4)
 
 *Click image to watch demo video on Loom*
 
